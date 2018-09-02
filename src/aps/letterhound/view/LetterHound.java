@@ -6,6 +6,8 @@ import aps.letterhound.core.Filters;
 import aps.letterhound.core.IO;
 import static aps.letterhound.core.IO.SUPPORTED_IMG_EXTENSIONS;
 import aps.letterhound.core.NeuralNetwork;
+import java.awt.Component;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -22,10 +24,11 @@ import org.encog.persist.EncogDirectoryPersistence;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
-
 public class LetterHound extends javax.swing.JFrame {
-
+    
     //<editor-fold defaultstate="collapsed" desc="Static">
+    private static final long serialVersionUID = 2L;
+    
     public static Mat img2Mat(BufferedImage in) {
 	byte[] pixels = ((DataBufferByte) in.getRaster().getDataBuffer()).getData();
 	Mat out = new Mat(in.getHeight(), in.getWidth(), CvType.CV_8UC1);
@@ -50,21 +53,22 @@ public class LetterHound extends javax.swing.JFrame {
         pnlVerProjection = new javax.swing.JPanel();
         pnlDiaProjection = new javax.swing.JPanel();
         pnlSecCount = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        btnSave = new javax.swing.JButton();
         mnbMenu = new javax.swing.JMenuBar();
-        jMenu3 = new javax.swing.JMenu();
-        jMenuItem5 = new javax.swing.JMenuItem();
+        mnuEditor = new javax.swing.JMenu();
+        mniClear = new javax.swing.JMenuItem();
         mniProcess = new javax.swing.JMenuItem();
-        jSeparator2 = new javax.swing.JPopupMenu.Separator();
-        jMenuItem7 = new javax.swing.JMenuItem();
-        jMenu1 = new javax.swing.JMenu();
+        sepEditor1 = new javax.swing.JPopupMenu.Separator();
+        mniExit = new javax.swing.JMenuItem();
+        mnuNeural = new javax.swing.JMenu();
         mncTrainFolder = new javax.swing.JCheckBoxMenuItem();
         mncValFolder = new javax.swing.JCheckBoxMenuItem();
         sepNeural1 = new javax.swing.JPopupMenu.Separator();
         mniTrain = new javax.swing.JMenuItem();
-        mniTestImg = new javax.swing.JMenuItem();
+        mniTrainD = new javax.swing.JMenuItem();
         sepNeural2 = new javax.swing.JPopupMenu.Separator();
+        mniTestImg = new javax.swing.JMenuItem();
+        sepNeural3 = new javax.swing.JPopupMenu.Separator();
         mniSave = new javax.swing.JMenuItem();
         mniLoad = new javax.swing.JMenuItem();
         mnuAbout = new javax.swing.JMenu();
@@ -100,12 +104,19 @@ public class LetterHound extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("LetterHound");
+        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("img/letterhound.png")));
         setResizable(false);
 
         pnlDraw.setBackground(new java.awt.Color(255, 255, 255));
         pnlDraw.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         pnlDraw.setMaximumSize(new java.awt.Dimension(225, 225));
         pnlDraw.setMinimumSize(new java.awt.Dimension(225, 225));
+
+        pnlDrawPanel.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                pnlDrawPanelMouseDragged(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlDrawPanelLayout = new javax.swing.GroupLayout(pnlDrawPanel);
         pnlDrawPanel.setLayout(pnlDrawPanelLayout);
@@ -122,6 +133,7 @@ public class LetterHound extends javax.swing.JFrame {
 
         btnProcess.setMnemonic('P');
         btnProcess.setText("Processar");
+        btnProcess.setToolTipText("Processa desenho pela rede neural.");
         btnProcess.setEnabled(false);
         btnProcess.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -130,10 +142,17 @@ public class LetterHound extends javax.swing.JFrame {
         });
 
         txfResult.setEditable(false);
+        txfResult.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         txfResult.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        txfResult.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txfResultKeyTyped(evt);
+            }
+        });
 
         btnClear.setMnemonic('L');
         btnClear.setText("Limpar");
+        btnClear.setToolTipText("Limpa painel de desenho.");
         btnClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnClearActionPerformed(evt);
@@ -155,17 +174,26 @@ public class LetterHound extends javax.swing.JFrame {
         pnlSecCount.setToolTipText("Setores");
         pnlSecCount.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 5, 3));
 
-        jMenu3.setMnemonic('E');
-        jMenu3.setText("Editor");
-
-        jMenuItem5.setMnemonic('L');
-        jMenuItem5.setText("Limpar");
-        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+        btnSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aps/letterhound/view/img/save.png"))); // NOI18N
+        btnSave.setToolTipText("<html>Salva desenhos para pasta de treinamento.<br>Utiliza resposta do processamento como<br>nome do aquivo, corrija-a caso necessário.</html>");
+        btnSave.setEnabled(false);
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem5ActionPerformed(evt);
+                btnSaveActionPerformed(evt);
             }
         });
-        jMenu3.add(jMenuItem5);
+
+        mnuEditor.setMnemonic('E');
+        mnuEditor.setText("Editor");
+
+        mniClear.setMnemonic('L');
+        mniClear.setText("Limpar");
+        mniClear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                mniClearActionPerformed(evt);
+            }
+        });
+        mnuEditor.add(mniClear);
 
         mniProcess.setMnemonic('P');
         mniProcess.setText("Processar");
@@ -175,22 +203,22 @@ public class LetterHound extends javax.swing.JFrame {
                 mniProcessActionPerformed(evt);
             }
         });
-        jMenu3.add(mniProcess);
-        jMenu3.add(jSeparator2);
+        mnuEditor.add(mniProcess);
+        mnuEditor.add(sepEditor1);
 
-        jMenuItem7.setMnemonic('S');
-        jMenuItem7.setText("Sair");
-        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+        mniExit.setMnemonic('S');
+        mniExit.setText("Sair");
+        mniExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem7ActionPerformed(evt);
+                mniExitActionPerformed(evt);
             }
         });
-        jMenu3.add(jMenuItem7);
+        mnuEditor.add(mniExit);
 
-        mnbMenu.add(jMenu3);
+        mnbMenu.add(mnuEditor);
 
-        jMenu1.setMnemonic('N');
-        jMenu1.setText("Neural Network");
+        mnuNeural.setMnemonic('N');
+        mnuNeural.setText("Rede Neural");
 
         mncTrainFolder.setMnemonic('T');
         mncTrainFolder.setText("Arquivos de Treinamento");
@@ -199,7 +227,7 @@ public class LetterHound extends javax.swing.JFrame {
                 mncTrainFolderActionPerformed(evt);
             }
         });
-        jMenu1.add(mncTrainFolder);
+        mnuNeural.add(mncTrainFolder);
 
         mncValFolder.setMnemonic('V');
         mncValFolder.setText("Arquivos de Validação");
@@ -208,8 +236,8 @@ public class LetterHound extends javax.swing.JFrame {
                 mncValFolderActionPerformed(evt);
             }
         });
-        jMenu1.add(mncValFolder);
-        jMenu1.add(sepNeural1);
+        mnuNeural.add(mncValFolder);
+        mnuNeural.add(sepNeural1);
 
         mniTrain.setText("Treinar");
         mniTrain.setEnabled(false);
@@ -218,17 +246,27 @@ public class LetterHound extends javax.swing.JFrame {
                 mniTrainActionPerformed(evt);
             }
         });
-        jMenu1.add(mniTrain);
+        mnuNeural.add(mniTrain);
 
-        mniTestImg.setText("Test Image");
+        mniTrainD.setText("Treinar (dump)");
+        mniTrainD.setEnabled(false);
+        mniTrainD.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                mniTrainDActionPerformed(evt);
+            }
+        });
+        mnuNeural.add(mniTrainD);
+        mnuNeural.add(sepNeural2);
+
+        mniTestImg.setText("Testar Imagem");
         mniTestImg.setEnabled(false);
         mniTestImg.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 mniTestImgActionPerformed(evt);
             }
         });
-        jMenu1.add(mniTestImg);
-        jMenu1.add(sepNeural2);
+        mnuNeural.add(mniTestImg);
+        mnuNeural.add(sepNeural3);
 
         mniSave.setText("Salvar");
         mniSave.setEnabled(false);
@@ -237,17 +275,17 @@ public class LetterHound extends javax.swing.JFrame {
                 mniSaveActionPerformed(evt);
             }
         });
-        jMenu1.add(mniSave);
+        mnuNeural.add(mniSave);
 
-        mniLoad.setText("Load");
+        mniLoad.setText("Abrir");
         mniLoad.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 mniLoadActionPerformed(evt);
             }
         });
-        jMenu1.add(mniLoad);
+        mnuNeural.add(mniLoad);
 
-        mnbMenu.add(jMenu1);
+        mnbMenu.add(mnuNeural);
 
         mnuAbout.setMnemonic('B');
         mnuAbout.setText("Sobre");
@@ -290,12 +328,10 @@ public class LetterHound extends javax.swing.JFrame {
                         .addComponent(btnClear)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnProcess, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txfResult, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txfResult, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
                 .addComponent(pnlSecCount, javax.swing.GroupLayout.DEFAULT_SIZE, 123, Short.MAX_VALUE)
                 .addContainerGap())
@@ -313,12 +349,11 @@ public class LetterHound extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(pnlDiaProjection, javax.swing.GroupLayout.DEFAULT_SIZE, 90, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(btnProcess, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                             .addComponent(txfResult, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnProcess, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(btnClear, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(btnSave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(pnlDraw, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -330,42 +365,125 @@ public class LetterHound extends javax.swing.JFrame {
     private File trainFolder;
     private File valFolder;
     private NeuralNetwork nNet;
+    private IO trainIO;
+    private IO valIO;
+    private Mat curMat;
+    private Component mainFrame;
+//  private boolean isDraw;
    
     public LetterHound() {
 	initComponents();
+	this.mainFrame = this;
     }
     
-    private void btnProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnProcessActionPerformed
-	if (nNet != null) {
-	    Mat draw = LetterHound.img2Mat((((DrawPanel) pnlDrawPanel).getImage()));
-	    if(!draw.empty()){
-		testMat(draw);
+    private void train(boolean isDump){
+	if(trainIO == null) return; //shouldn't happen
+	SwingWorker worker = new SwingWorker() {
+	    @Override
+	    protected Boolean doInBackground() {
+		try {
+		    Batcher bt = new Batcher(trainIO, isDump);
+		    bt.start();
+		    BarDialog barT = new BarDialog(mainFrame, bt, "Processando Imagens de Treinamento...");
+		    barT.start();
+		    
+		    Batcher bv;
+		    nNet = new NeuralNetwork();
+		    if (valIO != null) {
+			bv = new Batcher(valIO, isDump);
+			bv.start();
+			BarDialog barV = new BarDialog(mainFrame, bv, "Processando Imagens de Validação...");
+			barV.start();
+			nNet.train(bt.getDataSet(), bv.getDataSet());
+		    } else {
+			nNet.train(bt.getDataSet(), null);
+		    }
+		    
+		    BarDialog barN = new BarDialog(mainFrame, nNet, "Treinando Rede...");
+		    barN.start();
+		    
+		    mniSave.setEnabled(true);
+//		    mniProcess.setEnabled(true);
+//		    btnProcess.setEnabled(true);
+		    mniTestImg.setEnabled(true);
+		    return true;
+		} catch (IOException ex) {
+		    JOptionPane.showMessageDialog(
+			null,
+			"Erro durante o processamento!\n"+ex.getMessage(),
+			"LetterHound",
+			JOptionPane.ERROR_MESSAGE
+		    );
+		    return false;
+		}
 	    }
-	}
-    }//GEN-LAST:event_btnProcessActionPerformed
-
-    private void testMat(Mat mat){
-	Descriptors d = Descriptors.analyzeAll((mat=Filters.applyAll(mat)));
-	SimpleChart.drawChart(d.getHorizontalProjection(), 64, pnlHorProjection);
-	SimpleChart.drawChart(d.getVerticalProjection(), 64, pnlVerProjection);
-	SimpleChart.drawChart(d.getDiagonalProjection(), 100, pnlDiaProjection);
-	SimpleChart.drawChart(d.getSectorsCount(), 4096, pnlSecCount);
-	String result = Character.toString(nNet.testResult(d));
-	txfResult.setText(result); 
-//	File file = new File(System.getProperty("user.dir")+"/"+result+".jpg");//TESTING
-//	try {
-//	    IO.saveMatToImg(mat, file);
-//	} catch (IOException ex) {
-//	    System.out.println("ERRO");
+	};
+	worker.execute();
+    }
+    
+    private void processDraw() {
+	if (nNet == null) return;  //shouldn't happen
+	Mat draw = LetterHound.img2Mat((((DrawPanel) pnlDrawPanel).getImage()));
+//	if (isDraw) {
+	    testMat(draw);
+	    btnSave.setEnabled(true);
+	    txfResult.setEditable(true);
 //	}
     }
     
+    private void testMat(Mat mat){
+	Descriptors d = Descriptors.analyzeAll((curMat=Filters.applyAll(mat)));
+	SimpleChart.drawChart(d.getHorizontalProjection(), 64, pnlHorProjection);
+	SimpleChart.drawChart(d.getVerticalProjection(), 64, pnlVerProjection);
+	SimpleChart.drawChart(d.getDiagonalProjection(), 100, pnlDiaProjection);
+	SimpleChart.drawChart(d.getSectorsCount(), 1024, pnlSecCount);
+	String result = Character.toString(nNet.testResult(d));
+	txfResult.setText(result); 
+    }
+    
+    private void clear() {
+	pnlDiaProjection.removeAll();
+	pnlHorProjection.removeAll();
+	pnlVerProjection.removeAll();
+	pnlSecCount.removeAll();
+	txfResult.setText("");
+	btnSave.setEnabled(false);
+	txfResult.setEditable(false);
+//	isDraw=false;
+	btnProcess.setEnabled(false);
+	mniProcess.setEnabled(false);
+	((DrawPanel)pnlDrawPanel).clear();
+	pnlDiaProjection.repaint();
+	pnlHorProjection.repaint();
+	pnlSecCount.repaint();
+	pnlVerProjection.repaint();
+    }
+    
+    private void about(){
+	new AboutDialog(this).setVisible(true);
+    }
+    
+    private void btnProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnProcessActionPerformed
+	this.processDraw();
+    }//GEN-LAST:event_btnProcessActionPerformed
+ 
     private void mncTrainFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mncTrainFolderActionPerformed
         int result = fchFolder.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             trainFolder = fchFolder.getSelectedFile();
-            mncTrainFolder.setSelected(true);
-	    mniTrain.setEnabled(true);
+	    try {
+		trainIO = IO.getIO(trainFolder);
+		mncTrainFolder.setSelected(true);
+		mniTrain.setEnabled(true);
+		mniTrainD.setEnabled(true);
+	    } catch (IOException ex) {
+		JOptionPane.showMessageDialog(
+			this,
+			"Erro ao abrir a pasta!\n"+ex.getMessage(),
+			"LetterHound",
+			JOptionPane.ERROR_MESSAGE
+		);
+	    }
         }else{
 	    trainFolder = null;
 	    mncTrainFolder.setSelected(false);
@@ -377,7 +495,17 @@ public class LetterHound extends javax.swing.JFrame {
         int result = fchFolder.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION && fchFolder.getSelectedFile().exists()) {
             valFolder = fchFolder.getSelectedFile();
-            mncValFolder.setSelected(true);
+	    try {
+		valIO = IO.getIO(valFolder);
+		mncValFolder.setSelected(true);
+	    } catch (IOException ex) {
+		JOptionPane.showMessageDialog(
+			this,
+			"Erro ao abrir a pasta!\n"+ex.getMessage(),
+			"LetterHound",
+			JOptionPane.ERROR_MESSAGE
+		);
+	    }
         }else{
 	    valFolder = null;
 	    mncValFolder.setSelected(false);
@@ -385,51 +513,11 @@ public class LetterHound extends javax.swing.JFrame {
     }//GEN-LAST:event_mncValFolderActionPerformed
 
     private void mniTrainActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniTrainActionPerformed
-	SwingWorker worker = new SwingWorker() {
-	    @Override
-	    protected Boolean doInBackground(){
-		try {
-		    Batcher bt = Batcher.start(trainFolder.getAbsolutePath(), false);
-		    BarDialog barT = new BarDialog(bt, "Processando Imagens de Treinamento...");
-		    barT.setVisible(true);
-		    barT.start();
-
-		    Batcher bv;
-		    nNet = new NeuralNetwork();
-		    if (valFolder != null) {
-			bv = Batcher.start(valFolder.getAbsolutePath(), false);
-			BarDialog barV = new BarDialog(bv, "Processando Imagens de Validação...");
-			barV.setVisible(true);
-			barV.start();
-			nNet.train(bt.getDataSet(), bv.getDataSet());
-		    } else {
-			nNet.train(bt.getDataSet(), null);
-		    }
-		    
-		    BarDialog barN = new BarDialog(nNet, "Treinando Rede...");
-		    barN.setVisible(true);
-		    barN.start();
-		    
-		    mniSave.setEnabled(true);
-		    mniProcess.setEnabled(true);
-		    btnProcess.setEnabled(true);
-		    mniTestImg.setEnabled(true);
-		} catch (IOException ex) {
-		    JOptionPane.showMessageDialog(
-			    null,
-			    "ERRO: " + ex.getMessage(),
-			    "LetterHound",
-			    JOptionPane.ERROR_MESSAGE
-		    );
-		}
-		return true;
-	    }
-	};
-	worker.execute();
+	this.train(false);
     }//GEN-LAST:event_mniTrainActionPerformed
 
     private void mniSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniSaveActionPerformed
-	fchNetFile.setName("Salvar");
+	fchNetFile.setDialogTitle("Salvar");
 	int result = fchNetFile.showSaveDialog(this);
 	if (result == JFileChooser.APPROVE_OPTION && !fchNetFile.getSelectedFile().exists()) {
             File file = fchNetFile.getSelectedFile();
@@ -454,71 +542,32 @@ public class LetterHound extends javax.swing.JFrame {
     }//GEN-LAST:event_mniSaveActionPerformed
 
     private void mnuAboutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_mnuAboutMouseClicked
-        new AboutDialog(this).setVisible(true);
+        this.about();
     }//GEN-LAST:event_mnuAboutMouseClicked
 
     private void mnuAboutMenuKeyPressed(javax.swing.event.MenuKeyEvent evt) {//GEN-FIRST:event_mnuAboutMenuKeyPressed
         if(evt.getKeyCode() == KeyEvent.VK_ENTER){
-	    System.out.println("a");
-	    mnuAboutMouseClicked(null);
+	    this.about();
 	}
     }//GEN-LAST:event_mnuAboutMenuKeyPressed
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
-        pnlDiaProjection.removeAll();
-	pnlHorProjection.removeAll();
-	pnlVerProjection.removeAll();
-	pnlSecCount.removeAll();
-	txfResult.setText("");
-	((DrawPanel)pnlDrawPanel).clear();
-	pnlDiaProjection.repaint();
-	pnlHorProjection.repaint();
-	pnlSecCount.repaint();
-	pnlVerProjection.repaint();
+        this.clear();
     }//GEN-LAST:event_btnClearActionPerformed
 
-    private void mniLoadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniLoadActionPerformed
-	fchNetFile.setName("Abrir");
-	int result = fchNetFile.showOpenDialog(this);
-	if (result == JFileChooser.APPROVE_OPTION && fchNetFile.getSelectedFile().exists()) {
-            File file = fchNetFile.getSelectedFile();
-
-            BasicNetwork network = (BasicNetwork)EncogDirectoryPersistence.loadObject(file);
-	    nNet = new NeuralNetwork(network);
-	    
-	    JOptionPane.showMessageDialog(
-		    this,
-		    "A rede "+file.getName()+" foi carregada com sucesso.",
-		    "LetterHound",
-		    JOptionPane.PLAIN_MESSAGE
-	    );
-	    btnProcess.setEnabled(true);
-	    mniSave.setEnabled(true);
-	    mniTestImg.setEnabled(true);
-        }else if(result == JFileChooser.APPROVE_OPTION && !fchNetFile.getSelectedFile().exists()){
-	    JOptionPane.showMessageDialog(
-		    this,
-		    "O arquivo "+fchNetFile.getSelectedFile().getName()+" não existe!",
-		    "LetterHound",
-		    JOptionPane.ERROR_MESSAGE
-	    );
-	}	
-    }//GEN-LAST:event_mniLoadActionPerformed
-
     private void mniProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniProcessActionPerformed
-        btnProcessActionPerformed(null);
+       this.processDraw();
     }//GEN-LAST:event_mniProcessActionPerformed
 
-    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
-        btnClearActionPerformed(null);
-    }//GEN-LAST:event_jMenuItem5ActionPerformed
+    private void mniClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniClearActionPerformed
+        this.clear();
+    }//GEN-LAST:event_mniClearActionPerformed
 
-    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+    private void mniExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniExitActionPerformed
         this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
-    }//GEN-LAST:event_jMenuItem7ActionPerformed
+    }//GEN-LAST:event_mniExitActionPerformed
     
     private void mniTestImgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniTestImgActionPerformed
-
 	int result = fchImgFile.showOpenDialog(this);
 	if (result == JFileChooser.APPROVE_OPTION) {
             if(fchImgFile.getSelectedFile().exists()){
@@ -536,40 +585,122 @@ public class LetterHound extends javax.swing.JFrame {
         }	
     }//GEN-LAST:event_mniTestImgActionPerformed
 
+    private void mniLoadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniLoadActionPerformed
+        fchNetFile.setDialogTitle("Abrir");
+        int result = fchNetFile.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION && fchNetFile.getSelectedFile().exists()) {
+            File file = fchNetFile.getSelectedFile();
+
+            BasicNetwork network = (BasicNetwork)EncogDirectoryPersistence.loadObject(file);
+            nNet = new NeuralNetwork(network);
+
+            JOptionPane.showMessageDialog(
+                this,
+                "A rede "+file.getName()+" foi carregada com sucesso.",
+                "LetterHound",
+                JOptionPane.PLAIN_MESSAGE
+            );
+//          btnProcess.setEnabled(true);
+//	    mniProcess.setEnabled(true);
+            mniSave.setEnabled(true);
+            mniTestImg.setEnabled(true);
+            btnSave.setEnabled(false);
+        }else if(result == JFileChooser.APPROVE_OPTION && !fchNetFile.getSelectedFile().exists()){
+            JOptionPane.showMessageDialog(
+                this,
+                "O arquivo "+fchNetFile.getSelectedFile().getName()+" não existe!",
+                "LetterHound",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }//GEN-LAST:event_mniLoadActionPerformed
+
+    private void mniTrainDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniTrainDActionPerformed
+        this.train(true);
+    }//GEN-LAST:event_mniTrainDActionPerformed
+
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        if(curMat==null) return; //shoudn't happen
+	if(trainIO!=null){
+	    if(!txfResult.getText().isEmpty()){ 
+		try {
+		    trainIO.saveMatToImg(curMat, txfResult.getText()/*.toLowerCase()*/.charAt(0));
+		    btnSave.setEnabled(false);
+		} catch (IOException ex) {
+		    JOptionPane.showMessageDialog(
+			this,
+			"A imagem não pode ser salva!\n"+ex.getMessage(),
+			"LetterHound",
+			JOptionPane.ERROR_MESSAGE
+		    );
+		}
+	    }else{
+		JOptionPane.showMessageDialog(
+		    this,
+		    "A imagem não pode ser salva sem uma resposta da letra correta.",
+		    "LetterHound",
+		    JOptionPane.INFORMATION_MESSAGE
+		);
+	    }
+	}else{
+	    JOptionPane.showMessageDialog(
+                this,
+                "Selecione uma pasta de treinamento antes de salvar a imagem.",
+                "LetterHound",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+	}
+    }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void pnlDrawPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlDrawPanelMouseDragged
+//        if(!isDraw) isDraw = true;
+	if(!btnProcess.isEnabled()/* && !mniProcess.isEnabled()*/ && nNet != null){
+	    btnProcess.setEnabled(true);
+	    mniProcess.setEnabled(true);
+	}
+    }//GEN-LAST:event_pnlDrawPanelMouseDragged
+
+    private void txfResultKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txfResultKeyTyped
+	if(txfResult.getText().length()>0 || !String.valueOf(evt.getKeyChar()).matches("[a-z]")){
+	    evt.consume();
+	}/*else{
+	    evt.setKeyChar(Character.toLowerCase(evt.getKeyChar()));
+	}*/
+    }//GEN-LAST:event_txfResultKeyTyped
+
   
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnClear;
     private javax.swing.JButton btnProcess;
+    private javax.swing.JButton btnSave;
     private javax.swing.JFileChooser fchFolder;
     private javax.swing.JFileChooser fchImgFile;
     private javax.swing.JFileChooser fchNetFile;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu3;
-    private javax.swing.JMenuItem jMenuItem5;
-    private javax.swing.JMenuItem jMenuItem7;
-    private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JMenuBar mnbMenu;
     private javax.swing.JCheckBoxMenuItem mncTrainFolder;
     private javax.swing.JCheckBoxMenuItem mncValFolder;
+    private javax.swing.JMenuItem mniClear;
+    private javax.swing.JMenuItem mniExit;
     private javax.swing.JMenuItem mniLoad;
     private javax.swing.JMenuItem mniProcess;
     private javax.swing.JMenuItem mniSave;
     private javax.swing.JMenuItem mniTestImg;
     private javax.swing.JMenuItem mniTrain;
+    private javax.swing.JMenuItem mniTrainD;
     private javax.swing.JMenu mnuAbout;
+    private javax.swing.JMenu mnuEditor;
+    private javax.swing.JMenu mnuNeural;
     private javax.swing.JPanel pnlDiaProjection;
     private javax.swing.JPanel pnlDraw;
     private javax.swing.JPanel pnlDrawPanel;
     private javax.swing.JPanel pnlHorProjection;
     private javax.swing.JPanel pnlSecCount;
     private javax.swing.JPanel pnlVerProjection;
+    private javax.swing.JPopupMenu.Separator sepEditor1;
     private javax.swing.JPopupMenu.Separator sepNeural1;
     private javax.swing.JPopupMenu.Separator sepNeural2;
+    private javax.swing.JPopupMenu.Separator sepNeural3;
     private javax.swing.JTextField txfResult;
     // End of variables declaration//GEN-END:variables
 
-
-    
 }

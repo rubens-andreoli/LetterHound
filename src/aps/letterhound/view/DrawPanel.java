@@ -7,6 +7,7 @@ package aps.letterhound.view;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
@@ -27,7 +28,7 @@ public class DrawPanel extends JPanel implements MouseListener, MouseMotionListe
     private static final BasicStroke LINESTYLE = new BasicStroke(
 	    15, 
 	    BasicStroke.CAP_ROUND, 
-	    BasicStroke.JOIN_BEVEL
+	    BasicStroke.JOIN_ROUND
     );
     
     private ArrayList scribbles;
@@ -37,6 +38,7 @@ public class DrawPanel extends JPanel implements MouseListener, MouseMotionListe
 
     public DrawPanel() {
 	setSize(SIZE,SIZE);
+	setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 	image = newImage();
 	scribbles = new ArrayList();
 	addMouseListener(this);
@@ -47,7 +49,7 @@ public class DrawPanel extends JPanel implements MouseListener, MouseMotionListe
     public void paintComponent(Graphics g) {
 	super.paintComponent(g);
 	Graphics2D g2 = (Graphics2D) image.getGraphics();
-	g2.fillRect(0,0,image.getWidth(),image.getHeight());
+	g2.fillRect(0,0,image.getWidth()+10,image.getHeight()+10);
 	g2.setColor(Color.BLACK);
 	g2.setStroke(LINESTYLE);
 	int numScribbles = scribbles.size();
@@ -60,8 +62,8 @@ public class DrawPanel extends JPanel implements MouseListener, MouseMotionListe
     
     protected BufferedImage newImage(){
 	return new BufferedImage(
-		this.getWidth(), 
-		this.getHeight(), 
+		this.getWidth()+10, 
+		this.getHeight()+10, 
 		BufferedImage.TYPE_BYTE_GRAY
 	);
     }

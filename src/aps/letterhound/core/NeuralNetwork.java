@@ -17,9 +17,13 @@ import org.encog.neural.networks.training.propagation.resilient.ResilientPropaga
 public class NeuralNetwork implements Progressable {
     
     //<editor-fold defaultstate="collapsed" desc="Static">
+    public static final int NUM_DESCRIPTORS = 259;
     public static final int NUM_RESULT = 26;
     public static final int NUM_HIDDEN_LAYER = 50;
-    private static final int COUNTER_MAX = 100;
+    private static final int STATUS_MAX = 100;
+    private static final int TRAIN_MAX_EPOCH = 50000;
+    private static final double TRAIN_TARGET_ERROR = 5*10E-3;
+    private static final double VALID_ERROR_VARIATION = 0.01;
 
     private static final HashMap<Character, Integer> LETTER_MAP = new HashMap();
     static{
@@ -37,11 +41,11 @@ public class NeuralNetwork implements Progressable {
     //</editor-fold>
     
     public BasicNetwork net;
-    private volatile int status = 0;
+    private volatile int status;
     
     public NeuralNetwork(){
 	net = new BasicNetwork();
-	net.addLayer(new BasicLayer(null,true,Descriptors.NUM_DESCRIPTORS));
+	net.addLayer(new BasicLayer(null,true,NUM_DESCRIPTORS));
 	net.addLayer(new BasicLayer(new ActivationElliott(),true,NUM_HIDDEN_LAYER));
 	net.addLayer(new BasicLayer(new ActivationElliott(),true, NUM_RESULT));
 	net.getStructure().finalizeStructure();
@@ -49,7 +53,7 @@ public class NeuralNetwork implements Progressable {
     
     public NeuralNetwork(BasicNetwork net){
 	this.net = net;
-	status = 100;
+	status = 0;
     }
     
     public void train(ArrayList<DataPair> trainingList, ArrayList<DataPair> testList){
@@ -71,11 +75,7 @@ public class NeuralNetwork implements Progressable {
 	    );
 	}
 	
-	//Backpropagation prop = new Backpropagation(net, dataset, 0.03, 0.12);
-	//ResilientPropagation prop = new ResilientPropagation(net, trainingSet, 0.01, 50.0);
 	ResilientPropagation prop = new ResilientPropagation(net, trainingSet);
-	
-	
 	
 	
 	new Thread(new Runnable() {
@@ -85,30 +85,30 @@ public class NeuralNetwork implements Progressable {
 		double lastValError = 100;
 		do {
 		    prop.iteration();
-		    status = (int) (COUNTER_MAX - (prop.getError() * COUNTER_MAX));
-//		     System.out.println("Época: " + epoch + " Erro: " + prop.getError());
-//		     System.out.println(status);
+		    status = (int) (STATUS_MAX - ((prop.getError()-TRAIN_TARGET_ERROR) * STATUS_MAX));
+                    System.out.println("Época: " + epoch);
+                    System.out.println("Treinamento Erro: " + prop.getError());
 		    if (testSet != null) {
 			double valError = net.calculateError(testSet);
-//			System.out.println("Época: " + epoch + " Erro: " + valError);
-			if (valError > lastValError + 0.01 && valError > prop.getError()) {
-//		        System.out.println("-------------------------");
+			System.out.println("Validação Erro: " + valError);
+			if (valError > lastValError+VALID_ERROR_VARIATION && valError > prop.getError()) {
+                            System.out.println("Treinamento Interrompido");
 			    break;
 			}
 			lastValError = valError;
 		    }
 		    epoch++;
-		} while (epoch < 50000 && prop.getError() > 0.005);
+		} while (epoch < TRAIN_MAX_EPOCH && prop.getError() > TRAIN_TARGET_ERROR);
 
 		prop.finishTraining();
-		status = COUNTER_MAX;
+		status = STATUS_MAX;
 	    }
 	}).start();
 	
     }
     
     protected double[][] descListToArray(List<DataPair> list){
-	double[][] v = new double[list.size()][Descriptors.NUM_DESCRIPTORS];
+	double[][] v = new double[list.size()][NUM_DESCRIPTORS];
 	for(int i=0;i<list.size();i++){
 	    v[i] = list.get(i).getDescriptorsVector();
 	}
@@ -134,12 +134,14 @@ public class NeuralNetwork implements Progressable {
 	
 	int pos = 0;
 	for(int i=0; i<output.length; i++){
-	    double x = output[i];
+            double x = output[i];
+            System.out.println("Saída pos. "+i+": " + x);
 	    double y = output[pos];
 	    if(Math.abs(x-1) < Math.abs(y-1)){
 		pos = i;
 	    }
 	}
+        System.out.println("");
 	for(Map.Entry<Character,Integer> entry : LETTER_MAP.entrySet()){
 	    if(entry.getValue() == pos) return entry.getKey();
 	}
@@ -147,7 +149,7 @@ public class NeuralNetwork implements Progressable {
     }
 
     public @Override int getCounter() {return status;}
-    public @Override int getMaxCount() {return COUNTER_MAX;}
+    public @Override int getMaxCount() {return STATUS_MAX;}
     public BasicNetwork getNet() {return net;}
 
 }

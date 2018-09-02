@@ -10,16 +10,8 @@ public class DataPair {
 	this.result = result;
     }
 
-    public Descriptors getDescriptors() {
-	return descriptors;
-    }
-
-    public double[] getDescriptorsVector() {
-	return descriptors.getAll();
-    }
-
-    public double[] getResult() {
-	return result;
-    }
+    public Descriptors getDescriptors() {return descriptors;}
+    public double[] getDescriptorsVector() {return descriptors.getAll();}
+    public double[] getResult() {return result;}
 
 }

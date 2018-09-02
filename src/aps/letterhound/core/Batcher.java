@@ -8,44 +8,44 @@ import org.opencv.core.Mat;
 
 public class Batcher implements Progressable {
    
-    //<editor-fold defaultstate="collapsed" desc="Static">
-    public static Batcher start(String folder, boolean dump) throws IOException{
-	IO io = IO.getIO(folder);
-	Batcher b = new Batcher(io, folder, io.getImages().size(), dump);
-	new Thread(new Runnable(){
-	    @Override
-	    public void run() {
-		try {
-		    b.process();
-		    b.counter = b.numFiles;
-		} catch (IOException ex) {}
-	    }
-	}).start();
-	return b;
-    }
-    
-    public static Batcher start(String folder) throws IOException{
-	return Batcher.start(folder, false);
-    }
-    //</editor-fold>
-    
     private final ArrayList<DataPair> dataSet;
     private final IO io;
-    private final String folder;
     private final boolean dump;
     private final int numFiles;
     private volatile int counter;
     
-    protected Batcher(IO io, String folder, int numFiles, boolean dump){
+    public Batcher(IO io, boolean dump){
 	dataSet = new ArrayList<>();
 	counter = 0;
-	this.folder = folder;
-	this.numFiles = numFiles;
+	this.numFiles = io.getImages().size();
 	this.io = io;
 	this.dump = dump;
     }
+    
+    public Batcher(IO io){
+	this(io, false);
+    }
+    
+    private String e;
+    public void start() throws IOException{
+	new Thread(new Runnable() {
+	    @Override
+	    public void run() {
+		try {
+		    process();
+		    counter = numFiles;
+		    e = null;
+		} catch (IOException ex) {
+		    e = ex.getMessage();
+		}
+	    }
+	}).start();
+	if(e != null){
+	    throw new IOException(e);
+	}
+    }
  
-    protected void process() throws IOException{
+    public void process() throws IOException {
 	for (File image : io.getImages()) {
 	    Mat m = io.loadImgToGrayMat(image.getName());
 	    m = Filters.applyAll(m);
@@ -63,5 +63,7 @@ public class Batcher implements Progressable {
     public ArrayList<DataPair> getDataSet() {return dataSet;}
     public @Override int getCounter() {return counter;}
     public @Override int getMaxCount() {return numFiles;}
+    public IO getIo() {return io;}
+    public boolean isDump() {return dump;} 
 
 }

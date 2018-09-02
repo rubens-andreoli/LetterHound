@@ -1,20 +1,25 @@
 package aps.letterhound.view;
 
 import aps.letterhound.core.Progressable;
+import java.awt.Component;
 import java.awt.event.WindowEvent;
 
 public class BarDialog extends javax.swing.JDialog {
 
     private final String label;
     private final Progressable progressable;
+    private final Component parent;
 
-    public BarDialog(final Progressable progressable, String label) {
+    public BarDialog(final Component parent, final Progressable progressable, String label) {
 	this.progressable = progressable;
 	this.label = label;
+	this.parent = parent;
 	initComponents();
     }
     
     public void start() {
+	setVisible(true);
+	setLocationRelativeTo(parent);
 	bar.setMaximum(progressable.getMaxCount());
 	while(bar.getValue() < progressable.getMaxCount()){
 //	    synchronized(progressable) {

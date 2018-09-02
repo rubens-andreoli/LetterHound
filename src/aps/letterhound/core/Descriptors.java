@@ -6,7 +6,7 @@ import org.opencv.core.Mat;
 
 /**
  * <pre>
- * Contain methods and parameters to analyze 4 descriptors that describe images by their black pixels: 
+ * Contain methods and parameters to analyze 4 descriptors that describes images by their black pixels: 
  * -Vertical projection - counted by column; 
  * -Horizontal projection - counted by rows; 
  * -Diagonal projection - counted by diagonals; 
@@ -17,7 +17,6 @@ import org.opencv.core.Mat;
 public class Descriptors {
     
     //<editor-fold defaultstate="collapsed" desc="Static">
-    public static final int NUM_DESCRIPTORS = 259;
     private static final String ERROR_ONE_CHANNEL = "Image must have only one channel!";
     
      /**
@@ -69,9 +68,8 @@ public class Descriptors {
         int sum;
         double dp[] = new double[(order*2)-1];
         int c = order-1;
-        
-        //diagonal superior
-        for(int i=0; i<order; i++){
+
+        for(int i=0; i<order; i++){ //top
             sum = 0;
             for(int x=0; x<=i; x++){
                 double[] temp = mat.get(x, c-i+x); 
@@ -80,8 +78,8 @@ public class Descriptors {
             }
             dp[i] = sum;
         }  
-        //diagonal inferior
-        int pos = order;
+
+        int pos = order; //bottom
         for(int i=order-1; i>0; i--){
             sum = 0;     
             int col = order-1;
@@ -113,39 +111,33 @@ public class Descriptors {
         int sRows = mat.rows()/2;
         int sCols = mat.cols()/2;
 	for (int i=0; i<sCols; i++){
-            sc[0] += sRows - Core.countNonZero(mat.col(i).rowRange(0, sRows));
-	    sc[2] += sRows - Core.countNonZero(mat.col(i).rowRange(sRows, rows));
-	    sc[1] += sRows - Core.countNonZero(mat.col(i+sCols).rowRange(0, sRows));
-	    sc[3] += sRows - Core.countNonZero(mat.col(i+sCols).rowRange(sRows, rows));
+            sc[0] += sRows - Core.countNonZero(mat.col(i).rowRange(0, sRows)); //top-left
+	    sc[2] += sRows - Core.countNonZero(mat.col(i).rowRange(sRows, rows)); //top-right
+	    sc[1] += sRows - Core.countNonZero(mat.col(i+sCols).rowRange(0, sRows)); //bottom-left
+	    sc[3] += sRows - Core.countNonZero(mat.col(i+sCols).rowRange(sRows, rows)); //bottom-right
         }
         return sc;
     }
 
     /**
      * <pre>
-     * Analyzes 4 descriptors sequentially: vertical projection, horizontal projection, 
+     * Analyzes 4 descriptors sequentially: horizontal projection, vertical projection, 
      * diagonal projection, and sectors count. 
      * !Caution! Mat must be grayscale and should be black and white for proper behavior! 
      * </pre>
      * @param mat OpenCV matrix
-     * @return Descriptor object with analyzed descriptors as parameters
+     * @return Descriptors object with analyzed descriptors as parameters
      */
     public static Descriptors analyzeAll(Mat mat){
 	Descriptors d = new Descriptors();
+	d.horP = Descriptors.horizontalProjection(mat);
 	d.verP = Descriptors.verticalProjection(mat);
-        d.horP = Descriptors.horizontalProjection(mat);
 	d.diaP = Descriptors.diagonalProjection(mat);
 	d.secC = Descriptors.sectorsCount(mat);
-	d.all = new double[d.horP.length+d.verP.length+d.diaP.length+d.secC.length];
-	System.arraycopy(d.horP, 0, d.all, 0, d.horP.length);
-	System.arraycopy(d.verP, 0, d.all, d.horP.length, d.verP.length);
-	System.arraycopy(d.diaP, 0, d.all, d.horP.length+d.verP.length, d.diaP.length);
-	System.arraycopy(d.secC, 0, d.all, d.horP.length+d.verP.length+d.diaP.length, d.secC.length);
 	return d;
     }
     //</editor-fold>
     
-    private double[] all;
     private double[] horP;
     private double[] verP;
     private double[] diaP;
@@ -153,11 +145,25 @@ public class Descriptors {
     
     protected Descriptors(){}
 
+    /**
+     * Returns 4 descriptors sequentially: horizontal projection, vertical projection, 
+     * diagonal projection, and sectors count.
+     * @return all projection results
+     */
+    public double[] getAll() { // TEST: process all here or during creation?
+	double all[] = new double[horP.length+verP.length+diaP.length+secC.length];
+	System.arraycopy(horP, 0, all, 0, horP.length);
+	System.arraycopy(verP, 0, all, horP.length, verP.length);
+	System.arraycopy(diaP, 0, all, horP.length+verP.length, diaP.length);
+	System.arraycopy(secC, 0, all, horP.length+verP.length+diaP.length, secC.length);
+	return all;
+    }
+    
     public double[] getHorizontalProjection() {return horP;}
     public double[] getVerticalProjection() {return verP;}
     public double[] getDiagonalProjection() {return diaP;}
     public double[] getSectorsCount() {return secC;}
-    public double[] getAll() {return all;}
-    public @Override String toString() {return Arrays.toString(all);}
+    public int getNumDescriptors(){return horP.length+verP.length+diaP.length+secC.length;};
+    public @Override String toString() {return Arrays.toString(this.getAll());}
   
 }
