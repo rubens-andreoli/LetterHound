@@ -11,6 +11,9 @@
 -fix: menu "Treinar (dump)" desativado no início
 -fix: títulos da dialog ao abrir e salvar arquivos eg
 
+1.1.1
+-alt: package names
+
 
 
 
