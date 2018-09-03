@@ -1,0 +1,16 @@
+1.1.0
+-add: icone do frame principal
+-add: botão "ok" para "salvar" desenho
+-add: resposta do processamento pode ser alterada para salvar a imagem corretamente.
+-alt: botão e menu "processar" só são habilitados quando for desenhado algo.
+-alt: estilo do pincel de desenho para JOIN_ROUND
+-fix: não permite mais processar desenho em branco.
+-fix: faixa cinza no painel de desenho
+-fix: texto "sobre"
+-fix: erros no texto da interface
+-fix: menu "Treinar (dump)" desativado no início
+-fix: títulos da dialog ao abrir e salvar arquivos eg
+
+
+
+
